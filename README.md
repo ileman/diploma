@@ -8,7 +8,9 @@
 
 ##
 ##
+<pre>
 git add .
-git commit -m "02.12.2024"
+git commit -m "05.12.2024 isledilen"
 git push origin main
+</pre>
 ##
