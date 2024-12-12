@@ -10,7 +10,7 @@
 ##
 <pre>
 git add .
-git commit -m "05.12.2024 isledilen"
+git commit -m "05.12.2024 iot dusunje islenen"
 git push origin main
 </pre>
 ##
