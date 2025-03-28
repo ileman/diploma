@@ -1,0 +1,81 @@
+from flask import Flask, render_template, Response
+import RPi.GPIO as GPIO
+import cv2
+import time
+import threading
+from mfrc522 import SimpleMFRC522
+from pad4pi import rpi_gpio
+
+app = Flask(__name__)
+GPIO.setmode(GPIO.BCM)
+
+# Relay GPIO Pin
+RELAY_PIN = 17  # Modify as needed
+GPIO.setup(RELAY_PIN, GPIO.OUT)
+
+def toggle_relay():
+    GPIO.output(RELAY_PIN, not GPIO.input(RELAY_PIN))
+    time.sleep(1)
+
+# RFID Reader
+rfid_reader = SimpleMFRC522()
+
+def read_rfid():
+    try:
+        print("Scan RFID Card")
+        id, text = rfid_reader.read()
+        return f"Card ID: {id}, Data: {text}"
+    except Exception as e:
+        return str(e)
+
+# Keypad Configuration
+KEYPAD = [
+    ["1", "2", "3"],
+    ["4", "5", "6"],
+    ["7", "8", "9"],
+    ["*", "0", "#"]
+]
+
+ROW_PINS = [5, 6, 13, 19]  # Modify as needed
+COL_PINS = [12, 16, 20]  # Modify as needed
+factory = rpi_gpio.KeypadFactory()
+keypad = factory.create_keypad(keypad=KEYPAD, row_pins=ROW_PINS, col_pins=COL_PINS)
+
+def keypad_press(key):
+    print(f"Key Pressed: {key}")
+
+keypad.registerKeyPressHandler(keypad_press)
+
+# Camera Capture
+camera = cv2.VideoCapture(0)  # Use 0 for USB Camera, or 'rtsp://ip_camera_url' for IP camera
+
+def generate_frames():
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/relay')
+def relay():
+    toggle_relay()
+    return "Relay Toggled!"
+
+@app.route('/rfid')
+def rfid():
+    return read_rfid()
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
