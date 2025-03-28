@@ -6,7 +6,7 @@
 ##
 <pre>
 git add .
-git commit -m "05.12.2024 iot dusunje islenen"
+git commit -m "28.03.2025 II_I completed sucsess" 
 git push origin main
 </pre>
 ##
