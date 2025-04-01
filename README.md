@@ -6,7 +6,7 @@
 ##
 <pre>
 git add .
-git commit -m "01.04.2025 IItem completed III tem info get" 
+git commit -m "01.04.2025 IItem completed III tem info save" 
 git push origin main
 </pre>
 ##
