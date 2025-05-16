@@ -6,7 +6,7 @@
 ##
 <pre>
 git add .
-git commit -m "25.04.2025 for move offline" 
+git commit -m "16.05.2025 login is brutefoce protected after pull" 
 git push origin main
 </pre>
 ##
