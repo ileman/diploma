@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tk">
+<head>
+    <meta charset="UTF-8">
+    <title>Dolandyryjy Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 800px; margin-left: auto; margin-right: auto; }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 30px; }
+        .video-feed { border: 1px solid #ccc; max-width: 100%; height: auto; display: block; margin-left: auto; margin-right: auto; margin-bottom: 20px; background-color: #e9e9e9; }
+        .controls button {
+            padding: 10px 15px; margin: 5px; border: none; border-radius: 5px;
+            color: white; cursor: pointer; font-size: 16px; transition: background-color 0.2s ease-in-out;
+        }
+        .controls { text-align: center; margin-bottom: 10px; }
+        .on-button { background-color: #28a745; }
+        .on-button:hover { background-color: #218838; }
+        .off-button { background-color: #dc3545; }
+        .off-button:hover { background-color: #c82333; }
+        .logout-button-container { text-align: right; margin-bottom: 10px;}
+        .logout-button {
+            padding: 8px 12px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            display: inline-block; /* Чтобы кнопка не растягивалась */
+        }
+        .logout-button:hover { background-color: #5a6268; }
+        .sensor-data p { font-size: 1.1em; margin: 8px 0; }
+        .sensor-data span { font-weight: bold; color: #007bff; }
+        .status-message { margin-top: 10px; font-style: italic; color: #666; min-height: 1.2em; /* чтобы не прыгало при обновлении */ }
+        #sensor-error.error { color: #dc3545; font-weight: bold;}
+        #relay-status.error { color: #dc3545; font-weight: bold;}
+        #relay-status.success { color: #28a745; font-weight: bold;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logout-button-container">
+            <a href="{{ url_for('logout') }}" class="logout-button">Çykmak</a>
+        </div>
+        <h1>Dolandyryjy Panel</h1>
+        <p style="text-align: center;">Hoş geldiňiz, <strong>{{ username }}</strong>!</p>
+
+        <h2>Wideo Akymy</h2>
+        <img src="{{ url_for('video_feed') }}" class="video-feed" alt="Wideo Akymy ýüklenmedi ýa-da elýeterli däl">
+
+        <h2>Rele Dolandyryşy</h2>
+        <div class="controls">
+            <button class="on-button" onclick="controlRelay('on')">Releni Ýak</button>
+            <button class="off-button" onclick="controlRelay('off')">Releni Öçür</button>
+        </div>
+        <p id="relay-status" class="status-message"></p>
+
+        <h2>Temperatura we Çyglylyk</h2>
+        <div class="sensor-data">
+            <p>Temperatura: <span id="temperature">Ýüklenýär...</span> °C</p>
+            <p>Çyglylyk: <span id="humidity">Ýüklenýär...</span> %</p>
+        </div>
+        <p id="sensor-error" class="status-message"></p>
+    </div>
+
+    <script>
+        async function controlRelay(action) {
+            const relayStatusEl = document.getElementById('relay-status');
+            if (!relayStatusEl) {
+                console.error("Element with ID 'relay-status' not found.");
+                return;
+            }
+            relayStatusEl.textContent = 'Buýruk ýerine ýetirilýär...';
+            relayStatusEl.className = 'status-message'; // Reset classes
+
+            try {
+                const response = await fetch('/relay', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action: action }),
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `HTTP ýalňyşlygy! Status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData && errorData.error) {
+                            errorMsg = errorData.error; // Серверден келген катаны колдонуу
+                        } else if (errorData && errorData.message) {
+                             errorMsg = errorData.message;
+                        }
+                    } catch (e) {
+                        // JSON катасын талдоо мүмкүн болбоду, HTTP статусун колдонуңуз
+                        errorMsg = `Serwer ýalňyşlygy (${response.status}): ${response.statusText || 'Jogap alynmady'}`;
+                    }
+                    relayStatusEl.textContent = errorMsg;
+                    relayStatusEl.classList.add('error');
+                    console.error("Relay control error:", errorMsg);
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.error) {
+                    relayStatusEl.textContent = 'Buýruk ýalňyşlygy: ' + data.error;
+                    relayStatusEl.classList.add('error');
+                } else if (data.status) {
+                    relayStatusEl.textContent = data.status;
+                    relayStatusEl.classList.add('success');
+                } else {
+                    relayStatusEl.textContent = 'Serwerden düşnüksiz jogap formaty.';
+                    relayStatusEl.classList.add('error');
+                }
+
+            } catch (error) { // Тармактык ката же башка fetch'ке байланыштуу маселелер
+                relayStatusEl.textContent = 'Serwere birikmede ýalňyşlyk: ' + error.message;
+                relayStatusEl.classList.add('error');
+                console.error("Fetch error (controlRelay):", error);
+            }
+        }
+
+        async function fetchSensorData() {
+            const tempEl = document.getElementById('temperature');
+            const humEl = document.getElementById('humidity');
+            const errorEl = document.getElementById('sensor-error');
+
+            // Проверка на существование элементов (на всякий случай)
+            if (!tempEl || !humEl || !errorEl) {
+                console.error("Sensor data elements not found on the page.");
+                return;
+            }
+            errorEl.className = 'status-message'; // Reset classes
+
+            try {
+                const response = await fetch('/temperature');
+                if (!response.ok) {
+                    let errorMsg = `HTTP ýalňyşlygy! Status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData && errorData.error) {
+                            errorMsg = errorData.error;
+                        }
+                    } catch (e) {
+                        // JSON катасын талдоо мүмкүн болбоду
+                    }
+                    tempEl.textContent = 'N/A';
+                    humEl.textContent = 'N/A';
+                    errorEl.textContent = 'Serwer ýalňyşlygy: ' + errorMsg;
+                    errorEl.classList.add('error');
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.error) {
+                    tempEl.textContent = 'N/A';
+                    humEl.textContent = 'N/A';
+                    errorEl.textContent = 'Sensor maglumatlary alynmady: ' + data.error;
+                    errorEl.classList.add('error');
+                } else {
+                    tempEl.textContent = (typeof data.temperature === 'number') ? data.temperature.toFixed(1) : 'N/A'; // .toFixed(1) для одного знака
+                    humEl.textContent = (typeof data.humidity === 'number') ? data.humidity.toFixed(1) : 'N/A';   // .toFixed(1) для одного знака
+                    errorEl.textContent = ''; // Очистить предыдущие ошибки
+                }
+            } catch (error) {
+                tempEl.textContent = 'N/A';
+                humEl.textContent = 'N/A';
+                errorEl.textContent = 'Serwere birikmede ýalňyşlyk: ' + error.message;
+                errorEl.classList.add('error');
+                console.error("Fetch error (fetchSensorData):", error);
+            }
+        }
+
+        // Sahypa ýüklenende we her 10 sekuntda sensor maglumatlaryny täzele
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchSensorData(); // Загрузить данные сразу
+            setInterval(fetchSensorData, 10000); // Обновлять каждые 10 секунд
+        });
+    </script>
+</body>
+</html>

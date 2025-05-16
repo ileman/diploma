@@ -1,0 +1,44 @@
+mac calysmak
+/etc/netplan/05-*****.yaml icine gosmaly
+
+	>	eth0:
+			macaddress x:x:x:x:x:x
+
+	>	sudo netplan apply
+	>	ping 8.8.8.8
+
+	 2C-CF-67-76-96-5F      zawatskoy mac address
+	 20-13-12-1A-0C-1C	goyulmaly mac address
+
+	> sudo systemctl enable bluetooth
+	> sudo systemctl start bluetooth
+
+	> bluetoothctl
+
+	> power on
+	> discoverable on
+	> agent on
+	> default-agent
+
+run app.py
+	> cd /templates/
+	> python3 -m venv venv
+	> source venv/bin/activate
+	> pip install Flask
+	> pip install RPi.GPIO
+
+
+	> sudo apt install libgl1
+
+
+	> sudo apt install bluez bluez-tools python3-dbus bridge-utils dnsmasq
+
+
+	> sudo nano /etc/dnsmasq.conf 	#asakdakyny icine girizmeli 
+
+		interface=bnep0
+		dhcp-range=192.168.50.100,192.168.50.150,12h
+		port=0
+
+	> sudo systemctl restart systemd-networkd
+	> sudo systemctl restart dnsmasq.service

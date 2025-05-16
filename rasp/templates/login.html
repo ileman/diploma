@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="tk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Sahypasy</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; margin: 0; }
+        .login-container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 320px; text-align: left; }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; color: #555; }
+        input[type="text"], input[type="password"] {
+            width: 100%; /* padding üçin sazlama */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        input[type="submit"]:hover { background-color: #0056b3; }
+        input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        .error { 
+            color: red; 
+            text-align: center; 
+            margin-bottom: 15px; 
+            padding: 10px; 
+            background-color: #ffeeee; 
+            border: 1px solid #ffc0c0; 
+            border-radius: 4px;
+            line-height: 1.5; /* Habaryň oňat görünmegi üçin */
+        }
+        .flashes { list-style-type: none; padding: 0; margin: 0 0 15px 0; }
+        .flashes li.success { 
+            background-color: #d4edda; /* Bootstrap-daky ýaly ýaşyl reňk */
+            border: 1px solid #c3e6cb; 
+            color: #155724; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            border-radius: 4px; 
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Sistema Girmek</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        {% if error %}
+            <p class="error">{{ error | safe }}</p> <!-- |safe goşuldy, sebäbi 'error' HTML (span) saklap biler -->
+        {% endif %}
+
+        <form method="post" id="loginForm">
+            <div>
+                <label for="username">Ulanyjy ady:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div>
+                <label for="password">Parol:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div>
+                <input type="submit" value="Girmek" id="submitButton">
+            </div>
+        </form>
+    </div>
+
+    {% if blocked and remaining_time_for_js and remaining_time_for_js > 0 %}
+    <script>
+        let timeLeft = {{ remaining_time_for_js }};
+        const countdownSpan = document.getElementById('countdown_value'); // Ýalňyşlyk habarynyň içindäki span
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const submitButton = document.getElementById('submitButton');
+        const errorParagraph = document.querySelector('p.error'); // Ýalňyşlyk abzasy
+
+        function disableFormFields() {
+            if (usernameInput) usernameInput.disabled = true;
+            if (passwordInput) passwordInput.disabled = true;
+            if (submitButton) submitButton.disabled = true;
+        }
+
+        function enableFormFields() {
+            if (usernameInput) usernameInput.disabled = false;
+            if (passwordInput) passwordInput.disabled = false;
+            if (submitButton) submitButton.disabled = false;
+        }
+        
+        if (timeLeft > 0) {
+            disableFormFields(); // Sahypa ýüklenende formany öçür
+
+            const timer = setInterval(() => {
+                timeLeft--;
+                if (countdownSpan) {
+                    countdownSpan.textContent = timeLeft;
+                } else {
+                    // Eger countdownSpan ýok bolsa (meselem, POST bilen bloklanan wagty
+                    // we error habary täzelenmedik bolsa), ýöne error abzasy bar bolsa,
+                    // şonda täze habar döretmäge synanyş. Bu ýagdaý az duş gelmeli.
+                    if (errorParagraph && !document.getElementById('countdown_value')) {
+                        errorParagraph.innerHTML = `Siz köp gezek nädogry synanyşyk etdiňiz. <br>Giriş <strong><span id='countdown_value_inner'>${timeLeft}</span></strong> sekuntdan soň mümkin bolar.`;
+                        // Eger täze döredilen bolsa, täzeden tapmaly
+                        const newCountdownSpan = document.getElementById('countdown_value_inner');
+                        if (newCountdownSpan) newCountdownSpan.textContent = timeLeft;
+                    }
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    if (errorParagraph) {
+                        // Habary üýtgetmek ýa-da aýyrmak (serwer indiki gezek täze habar berer)
+                        errorParagraph.innerHTML = "Blok wagty gutardy. Indi girip bilersiňiz."; 
+                    }
+                    enableFormFields();
+                    // Sahypany täzelemäge zerurlyk ýok, ulanyjy täzeden synanyşyp biler.
+                    // Serwer indiki POST haýyşynda blok ýagdaýyny täzeden bahalandyrar.
+                }
+            }, 1000);
+        }
+    </script>
+    {% endif %}
+
+</body>
+</html>
