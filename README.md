@@ -6,7 +6,7 @@
 ##
 <pre>
 git add .
-git commit -m "16.05.2025 documentaion update " 
+git commit -m "16.05.2025 documentaion update 2" 
 git push origin main
 </pre>
 ##
